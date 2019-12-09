@@ -7,7 +7,7 @@ node {
         stage('build') {
                 openshift.withCluster() {
                     openshift.withProject("${devProject}") {
-                      def builds = openshift.selector("bc", templateName).related('builds')
+                      def builds = openshift.selector("bc", "gitbook-centos-docker").related('builds')
                       timeout(5) { 
                         builds.untilEach {
                           return it.object().status.phase == "Complete"
