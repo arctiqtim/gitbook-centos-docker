@@ -1,47 +1,32 @@
 
 node {
-        def templateName = 'gitbook-centos-docker'
+    def templateName = 'gitbook-centos-docker'
 
-        stage('test') {
-          sh 'oc get bc'
-        }
+    openshift.withCluster() {
+        openshift.withProject() {
 
-        stage('build') {
-                openshift.withCluster() {
-                    openshift.withProject() {
-                      def builds = openshift.startBuild("${templateName}")
-                      timeout(5) { 
-                        builds.untilEach(1) {
-                          return it.object().status.phase == "Complete"
-                        }
-                        builds.logs('-f')
-                      }
-                    }
+            stage('build') {
+                def builds = openshift.startBuild("${templateName}")
+                timeout(5) { 
+                  builds.untilEach(1) {
+                    return it.object().status.phase == "Complete"
+                  }
+                  builds.logs('-f')
                 }
-        }
+            }
 
-        stage('deploy') {
-                openshift.withCluster() {
-                    openshift.withProject() {
-                      def rm = openshift.selector("dc", templateName).rollout()
-                      timeout(5) { 
-                        openshift.selector("dc", templateName).related('pods').untilEach(1) {
-                          return (it.object().status.phase == "Running")
-                        }
-                      }
-                    }
-                }
-        }
+            stage('deploy') {
+                def dc = openshift.selector('dc', "${templateName}")
+                dc.rollout().status()
+            }
 
-        stage('ask for promotion') {
-            input id: 'Approve01', message: 'Wanna push to prod?????', ok: 'HANG TIGHT!'
-        }
+            stage('ask for promotion') {
+                input id: 'Approve01', message: 'Wanna push to prod?????', ok: 'HANG TIGHT!'
+            }
 
-        stage('tag and promote') {
-                openshift.withCluster() {
-                    openshift.withProject() {
-                      openshift.tag("${templateName}:latest", "${templateName}:prod") 
-                    }
-                }
+            stage('tag and promote') {
+                openshift.tag("${templateName}:latest", "${templateName}:prod") 
+            }
         }
+    }
 }
