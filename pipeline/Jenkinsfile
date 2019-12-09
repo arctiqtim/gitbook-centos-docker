@@ -2,6 +2,7 @@
 node {
     try {
         notifyBuild('STARTED')
+        def templateName = 'gitbook-centos-docker'
 
         stage('build') {
           steps {
