@@ -9,7 +9,7 @@ node {
         stage('build') {
                 openshift.withCluster() {
                     openshift.withProject() {
-                      def builds = openshift.startBuild("${gitbook-centos-docker}")
+                      def builds = openshift.startBuild("${templateName}")
                       timeout(5) { 
                         builds.untilEach {
                           return it.object().status.phase == "Complete"
