@@ -11,9 +11,10 @@ node {
                     openshift.withProject() {
                       def builds = openshift.startBuild("${templateName}")
                       timeout(5) { 
-                        builds.untilEach {
+                        builds.untilEach(1) {
                           return it.object().status.phase == "Complete"
                         }
+                        builds.logs('-f')
                       }
                     }
                 }
