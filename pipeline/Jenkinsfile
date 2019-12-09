@@ -3,58 +3,57 @@ node {
     try {
         notifyBuild('STARTED')
         def templateName = 'gitbook-centos-docker'
-        stages {
-            stage('build') {
-              steps {
-                script {
-                    openshift.withCluster() {
-                        openshift.withProject() {
-                          def builds = openshift.selector("bc", templateName).related('builds')
-                          timeout(5) { 
-                            builds.untilEach(1) {
-                              return (it.object().status.phase == "Complete")
-                            }
-                          }
+        
+        stage('build') {
+          steps {
+            script {
+                openshift.withCluster() {
+                    openshift.withProject() {
+                      def builds = openshift.selector("bc", templateName).related('builds')
+                      timeout(5) { 
+                        builds.untilEach(1) {
+                          return (it.object().status.phase == "Complete")
                         }
+                      }
                     }
                 }
-              }
             }
-
-            stage('deploy') {
-              steps {
-                script {
-                    openshift.withCluster() {
-                        openshift.withProject() {
-                          def rm = openshift.selector("dc", templateName).rollout()
-                          timeout(5) { 
-                            openshift.selector("dc", templateName).related('pods').untilEach(1) {
-                              return (it.object().status.phase == "Running")
-                            }
-                          }
-                        }
-                    }
-                }
-              }
-            }
-
-            stage('ask for promotion') {
-                input id: 'Approve01', message: 'Wanna push to prod?????', ok: 'HANG TIGHT!'
-            }
-
-            stage('tag and promote') {
-              steps {
-                script {
-                    openshift.withCluster() {
-                        openshift.withProject() {
-                          openshift.tag("${templateName}:latest", "${templateName}:prod") 
-                        }
-                    }
-                }
-              }
-            }
+          }
         }
-            
+
+        stage('deploy') {
+          steps {
+            script {
+                openshift.withCluster() {
+                    openshift.withProject() {
+                      def rm = openshift.selector("dc", templateName).rollout()
+                      timeout(5) { 
+                        openshift.selector("dc", templateName).related('pods').untilEach(1) {
+                          return (it.object().status.phase == "Running")
+                        }
+                      }
+                    }
+                }
+            }
+          }
+        }
+
+        stage('ask for promotion') {
+            input id: 'Approve01', message: 'Wanna push to prod?????', ok: 'HANG TIGHT!'
+        }
+
+        stage('tag and promote') {
+          steps {
+            script {
+                openshift.withCluster() {
+                    openshift.withProject() {
+                      openshift.tag("${templateName}:latest", "${templateName}:prod") 
+                    }
+                }
+            }
+          }
+        }
+
   } catch (e) {
     // If there was an exception thrown, the build failed
     currentBuild.result = "FAILED"
