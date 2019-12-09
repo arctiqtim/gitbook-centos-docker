@@ -1,8 +1,6 @@
 
 node {
         def templateName = 'gitbook-centos-docker'
-        def devProject = 'dev-gitbook'
-        def prodProject = 'prod-gitbook'
 
         stage('test') {
           sh 'oc get bc'
@@ -11,7 +9,7 @@ node {
         stage('build') {
                 openshift.withCluster() {
                     openshift.withProject() {
-                      def builds = openshift.selector("bc", "gitbook-centos-docker").related('builds')
+                      def builds = openshift.startBuild("${gitbook-centos-docker}")
                       timeout(5) { 
                         builds.untilEach {
                           return it.object().status.phase == "Complete"
@@ -23,7 +21,7 @@ node {
 
         stage('deploy') {
                 openshift.withCluster() {
-                    openshift.withProject("${devProject}") {
+                    openshift.withProject() {
                       def rm = openshift.selector("dc", templateName).rollout()
                       timeout(5) { 
                         openshift.selector("dc", templateName).related('pods').untilEach(1) {
@@ -40,7 +38,7 @@ node {
 
         stage('tag and promote') {
                 openshift.withCluster() {
-                    openshift.withProject("${devProject}") {
+                    openshift.withProject() {
                       openshift.tag("${templateName}:latest", "${templateName}:prod") 
                     }
                 }
