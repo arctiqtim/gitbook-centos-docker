@@ -4,6 +4,10 @@ node {
         def devProject = 'dev-gitbook'
         def prodProject = 'prod-gitbook'
 
+        stage('test') {
+          sh 'oc get bc'
+        }
+
         stage('build') {
                 openshift.withCluster() {
                     openshift.withProject() {
