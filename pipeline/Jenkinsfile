@@ -20,7 +20,16 @@ node {
             echo 'Deploy - Backend'
             echo 'Deploy - Frontend'
         }
+        stage 'build'
+            openshiftBuild(bldCfg: 'gitbook-centos-docker')
+        stage 'deploy'
+            sh "oc rollout latest dc/gitbook-centos-docker"
 
+        stage 'ask for promotion'
+            input id: 'Approve01', message: 'Wanna push to prod?????', ok: 'HANG TIGHT!'
+
+        stage 'tag and promote'
+            sh "oc tag gitbook-centos-docker:latest gitbook-centos-docker:prod"
   } catch (e) {
     // If there was an exception thrown, the build failed
     currentBuild.result = "FAILED"
